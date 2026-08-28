@@ -106,9 +106,6 @@ fun MiDiaConDiosV07App() {
         )
 
         fun navigateTopLevel(route: String) {
-            // Secondary screens such as Gratitud/Favoritos/Iglesia are children of Inicio.
-            // Never restore a previously saved child back stack when the user explicitly
-            // taps a bottom-navigation destination.
             nav.navigate(route) {
                 popUpTo("inicio") {
                     inclusive = false
@@ -144,7 +141,7 @@ fun MiDiaConDiosV07App() {
                 modifier = Modifier.then(Modifier)
             ) {
                 composable("inicio") {
-                    V7HomeScreen(
+                    V09HomeScreen(
                         contentPadding = padding,
                         onPrayers = { navigateTopLevel("oraciones") },
                         onGratitude = { nav.navigate("gratitud") { launchSingleTop = true } },
