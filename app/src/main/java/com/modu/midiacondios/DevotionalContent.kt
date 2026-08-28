@@ -1,7 +1,6 @@
 package com.modu.midiacondios
 
 import java.time.LocalDate
-import kotlin.math.floorMod
 
 data class Devotional(
     val reference: String,
@@ -99,7 +98,7 @@ object DevotionalRepository {
     )
 
     fun forDate(date: LocalDate): Devotional {
-        val index = floorMod(date.toEpochDay(), devotionals.size.toLong()).toInt()
+        val index = Math.floorMod(date.toEpochDay(), devotionals.size.toLong()).toInt()
         return devotionals[index]
     }
 
