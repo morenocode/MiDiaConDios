@@ -3,8 +3,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// Google Services is applied only after app/google-services.json is added.
-// This keeps the project buildable while Firebase is not configured yet.
 if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
@@ -17,8 +15,8 @@ android {
         applicationId = "com.modu.midiacondios"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
@@ -46,8 +44,6 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // La firma de producción se configurará con una clave privada distinta
-            // antes de publicar el AAB en Google Play. Nunca usar la clave debug para producción.
         }
     }
 
