@@ -1,8 +1,14 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <style name="Theme.MiDiaConDios" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#F7F5FF</item>
-        <item name="android:navigationBarColor">#FFFFFF</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#4F378B</item>
+        <item name="android:navigationBarColor">#121116</item>
+    </style>
+
+    <style name="Theme.MiDiaConDios.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#4F378B</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.MiDiaConDios</item>
     </style>
 </resources>
