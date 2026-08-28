@@ -7,6 +7,16 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /events/{document} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /announcements/{document} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
     // Todo lo demás permanece bloqueado por defecto.
     match /{document=**} {
       allow read, write: if false;
