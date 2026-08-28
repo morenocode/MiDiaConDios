@@ -12,7 +12,8 @@
         android:theme="@style/Theme.MiDiaConDios">
         <activity
             android:name=".V06Activity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.MiDiaConDios.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
