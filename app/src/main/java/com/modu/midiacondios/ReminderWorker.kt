@@ -25,7 +25,6 @@ class ReminderWorker(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        val devotional = DevotionalRepository.today()
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -50,10 +49,10 @@ class ReminderWorker(
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_today)
             .setContentTitle("Tu momento con Dios te espera 🙏")
-            .setContentText("Lectura de hoy: ${devotional.reference}")
+            .setContentText("El devocional de hoy ya está listo para ti.")
             .setStyle(
                 NotificationCompat.BigTextStyle().bigText(
-                    "Dedica unos minutos a tu devocional de hoy. Lectura: ${devotional.reference}."
+                    "Dedica unos minutos a leer, reflexionar, orar y comenzar tu día con propósito."
                 )
             )
             .setAutoCancel(true)
@@ -66,9 +65,9 @@ class ReminderWorker(
     }
 }
 
-fun scheduleDailyReminder(context: Context) {
+fun scheduleDailyReminder(context: Context, hour: Int = 8, minute: Int = 0) {
     val now = ZonedDateTime.now()
-    var next = now.withHour(8).withMinute(0).withSecond(0).withNano(0)
+    var next = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
     if (!next.isAfter(now)) next = next.plusDays(1)
     val initialDelay = Duration.between(now, next).toMillis()
 
