@@ -1,23 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Contenido público de solo lectura para la app.
+
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Contenido público: cualquier usuario de la app puede leerlo.
+    // Solo una cuenta autenticada y registrada en /admins/{uid} puede modificarlo.
     match /devotionals/{date} {
       allow read: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /events/{document} {
       allow read: if true;
-      allow create, update, delete: if false;
+      allow create, update, delete: if isAdmin();
     }
 
     match /announcements/{document} {
       allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Cada usuario autenticado solo puede comprobar si existe SU documento admin.
+    // La app nunca puede crear, editar, borrar ni listar administradores.
+    match /admins/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow list: if false;
       allow create, update, delete: if false;
     }
 
-    // Todo lo demás permanece bloqueado por defecto.
     match /{document=**} {
       allow read, write: if false;
     }
