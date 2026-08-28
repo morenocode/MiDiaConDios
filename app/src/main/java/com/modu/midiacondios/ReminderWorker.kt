@@ -38,7 +38,7 @@ class ReminderWorker(
             notificationManager.createNotificationChannel(channel)
         }
 
-        val intent = Intent(applicationContext, MainActivity::class.java)
+        val intent = Intent(applicationContext, V06Activity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             applicationContext,
             0,
