@@ -1,13 +1,22 @@
 package com.modu.midiacondios
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.google.firebase.firestore.FirebaseFirestore
 import java.time.LocalDate
 
-data class Devotional(
-    val reference: String,
-    val verse: String,
-    val reflection: String,
-    val prayer: String
-)
+class Devotional(
+    reference: String,
+    verse: String,
+    reflection: String,
+    prayer: String
+) {
+    var reference by mutableStateOf(reference)
+    var verse by mutableStateOf(verse)
+    var reflection by mutableStateOf(reflection)
+    var prayer by mutableStateOf(prayer)
+}
 
 object DevotionalRepository {
     private val devotionals = listOf(
@@ -97,9 +106,52 @@ object DevotionalRepository {
         )
     )
 
+    private val requestedDates = mutableSetOf<String>()
+
     fun forDate(date: LocalDate): Devotional {
         val index = Math.floorMod(date.toEpochDay(), devotionals.size.toLong()).toInt()
-        return devotionals[index]
+        val local = devotionals[index]
+        refreshFromFirestore(date, local)
+        return local
+    }
+
+    private fun refreshFromFirestore(date: LocalDate, target: Devotional) {
+        val dateId = date.toString()
+        if (!requestedDates.add(dateId)) return
+
+        try {
+            FirebaseFirestore.getInstance()
+                .collection("devotionals")
+                .document(dateId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (!document.exists()) return@addOnSuccessListener
+
+                    val reference = document.getString("reference").orEmpty().trim()
+                    val verse = document.getString("verse").orEmpty().trim()
+                    val reflection = document.getString("reflection").orEmpty().trim()
+                    val prayer = document.getString("prayer").orEmpty().trim()
+
+                    if (
+                        reference.isNotBlank() &&
+                        verse.isNotBlank() &&
+                        reflection.isNotBlank() &&
+                        prayer.isNotBlank()
+                    ) {
+                        target.reference = reference
+                        target.verse = verse
+                        target.reflection = reflection
+                        target.prayer = prayer
+                    }
+                }
+                .addOnFailureListener {
+                    // La app conserva el contenido local si Firebase o Internet falla.
+                    requestedDates.remove(dateId)
+                }
+        } catch (_: Exception) {
+            // Si Firebase aún no está disponible, se usa el devocional incluido en la app.
+            requestedDates.remove(dateId)
+        }
     }
 
     fun today(): Devotional = forDate(LocalDate.now())
