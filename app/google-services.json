@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "740977093561",
+    "project_id": "mi-dia-con-dios-f059a",
+    "storage_bucket": "mi-dia-con-dios-f059a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:740977093561:android:f8a3eb32afc248bc68a468",
+        "android_client_info": {
+          "package_name": "com.modu.midiacondios"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9EhWS6EooFXQQuto5d56Qa9QUaXcdPwg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
