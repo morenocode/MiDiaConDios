@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Contenido público de solo lectura para la app.
+    match /devotionals/{date} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    // Todo lo demás permanece bloqueado por defecto.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
