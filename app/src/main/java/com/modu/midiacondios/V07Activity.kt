@@ -11,15 +11,15 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.VolunteerActivism
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -98,6 +97,7 @@ fun MiDiaConDiosV07App() {
         val nav = rememberNavController()
         val entry by nav.currentBackStackEntryAsState()
         val current = entry?.destination?.route
+        val homeChildRoutes = setOf("gratitud", "favoritos", "iglesia")
         val tabs = listOf(
             V7NavItem("inicio", "Inicio", Icons.Filled.Home),
             V7NavItem("planes", "Planes", Icons.Outlined.MenuBook),
@@ -105,21 +105,31 @@ fun MiDiaConDiosV07App() {
             V7NavItem("perfil", "Perfil", Icons.Outlined.AccountCircle)
         )
 
+        fun navigateTopLevel(route: String) {
+            // Secondary screens such as Gratitud/Favoritos/Iglesia are children of Inicio.
+            // Never restore a previously saved child back stack when the user explicitly
+            // taps a bottom-navigation destination.
+            nav.navigate(route) {
+                popUpTo("inicio") {
+                    inclusive = false
+                    saveState = false
+                }
+                launchSingleTop = true
+                restoreState = false
+            }
+        }
+
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             bottomBar = {
                 if (current != "admin") {
                     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 5.dp) {
                         tabs.forEach { item ->
+                            val selected = current == item.route ||
+                                (item.route == "inicio" && current in homeChildRoutes)
                             NavigationBarItem(
-                                selected = current == item.route,
-                                onClick = {
-                                    nav.navigate(item.route) {
-                                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
+                                selected = selected,
+                                onClick = { navigateTopLevel(item.route) },
                                 icon = { Icon(item.icon, contentDescription = item.label) },
                                 label = { Text(item.label, fontSize = 11.sp) }
                             )
@@ -136,10 +146,10 @@ fun MiDiaConDiosV07App() {
                 composable("inicio") {
                     V7HomeScreen(
                         contentPadding = padding,
-                        onPrayers = { nav.navigate("oraciones") },
-                        onGratitude = { nav.navigate("gratitud") },
-                        onFavorites = { nav.navigate("favoritos") },
-                        onChurch = { nav.navigate("iglesia") }
+                        onPrayers = { navigateTopLevel("oraciones") },
+                        onGratitude = { nav.navigate("gratitud") { launchSingleTop = true } },
+                        onFavorites = { nav.navigate("favoritos") { launchSingleTop = true } },
+                        onChurch = { nav.navigate("iglesia") { launchSingleTop = true } }
                     )
                 }
                 composable("planes") { V7PlansScreen(padding) }
@@ -152,7 +162,7 @@ fun MiDiaConDiosV07App() {
                             darkMode = enabled
                             settings.edit().putBoolean("darkMode", enabled).apply()
                         },
-                        onAdmin = { nav.navigate("admin") }
+                        onAdmin = { nav.navigate("admin") { launchSingleTop = true } }
                     )
                 }
                 composable("gratitud") { V7GratitudeScreen(padding) }
