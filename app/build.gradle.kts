@@ -11,16 +11,37 @@ android {
         applicationId = "com.modu.midiacondios"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        create("ciDebug") {
+            val ciStore = rootProject.file("ci-debug.p12")
+            if (ciStore.exists()) {
+                storeFile = ciStore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+                storeType = "pkcs12"
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            val ciStore = rootProject.file("ci-debug.p12")
+            if (ciStore.exists()) {
+                signingConfig = signingConfigs.getByName("ciDebug")
+            }
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // La firma de producción se configurará con una clave privada distinta
+            // antes de publicar el AAB en Google Play. Nunca usar la clave debug para producción.
         }
     }
 
