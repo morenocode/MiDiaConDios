@@ -1,5 +1,8 @@
 package com.modu.midiacondios
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +24,7 @@ import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -29,7 +33,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,10 +42,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -123,7 +129,7 @@ private fun AdminLogin(onSignedIn: () -> Unit) {
         Text("Panel privado", fontSize = 29.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
         Text(
-            "Inicia sesión con la cuenta autorizada. Las reglas de Firebase volverán a comprobar tus permisos antes de permitir una publicación.",
+            "Inicia sesión con la cuenta autorizada. Firebase comprobará tus permisos antes de permitir una publicación.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 21.sp
         )
@@ -179,7 +185,7 @@ private fun NotAuthorized(email: String, uid: String, onRetry: () -> Unit, onLog
         Text("Cuenta sin autorización", fontSize = 27.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "La sesión es válida, pero esta cuenta todavía no figura como administradora. Esto impide que cualquier cuenta de Firebase pueda publicar contenido.",
+            "La sesión es válida, pero esta cuenta todavía no figura como administradora.",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 21.sp
         )
@@ -237,7 +243,7 @@ private fun AdminWorkspace(email: String, onLogout: () -> Unit) {
             FilterChip(
                 selected = section == 2,
                 onClick = { section = 2 },
-                label = { Text("Anuncio") },
+                label = { Text("Lo nuevo") },
                 leadingIcon = { Icon(Icons.Outlined.Campaign, contentDescription = null) }
             )
         }
@@ -245,7 +251,7 @@ private fun AdminWorkspace(email: String, onLogout: () -> Unit) {
         when (section) {
             0 -> DevotionalEditor()
             1 -> EventEditor()
-            else -> AnnouncementEditor()
+            else -> ChurchUpdateEditor()
         }
         Spacer(Modifier.height(30.dp))
     }
@@ -326,33 +332,87 @@ private fun EventEditor() {
 }
 
 @Composable
-private fun AnnouncementEditor() {
+private fun ChurchUpdateEditor() {
+    val context = LocalContext.current
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
     var title by remember { mutableStateOf("") }
     var body by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
 
-    AdminEditorCard("Nuevo anuncio", "Los anuncios publicados aparecerán en la sección Iglesia.") {
-        OutlinedTextField(title, { title = it }, Modifier.fillMaxWidth(), label = { Text("Título") }, singleLine = true)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            imageUri = uri
+            message = null
+        }
+    }
+
+    AdminEditorCard(
+        "Lo nuevo",
+        "Sube una fotografía o flyer. Los usuarios podrán verlo en Iglesia, pero no editarlo ni eliminarlo."
+    ) {
+        OutlinedButton(
+            onClick = { picker.launch("image/*") },
+            enabled = !loading,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(if (imageUri == null) "Elegir fotografía o flyer" else "Cambiar imagen")
+        }
+
+        imageUri?.let { uri ->
+            Spacer(Modifier.height(12.dp))
+            Card(Modifier.fillMaxWidth()) {
+                AsyncImage(
+                    model = uri,
+                    contentDescription = "Vista previa de la publicación",
+                    modifier = Modifier.fillMaxWidth().height(300.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Título opcional") },
+            singleLine = true
+        )
         Spacer(Modifier.height(9.dp))
-        OutlinedTextField(body, { body = it }, Modifier.fillMaxWidth(), label = { Text("Contenido") }, minLines = 4)
+        OutlinedTextField(
+            value = body,
+            onValueChange = { body = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Texto breve opcional") },
+            minLines = 2
+        )
+
         message?.let { Spacer(Modifier.height(9.dp)); AdminMessage(it) }
         Spacer(Modifier.height(12.dp))
         Button(
             onClick = {
+                val selected = imageUri ?: return@Button
                 loading = true
                 message = null
-                FirebaseAdminSource.publishAnnouncement(title, body) { ok, error ->
+                val contentType = context.contentResolver.getType(selected)
+                FirebaseAdminSource.publishChurchUpdate(selected, contentType, title, body) { ok, error ->
                     loading = false
                     if (ok) {
-                        message = "✓ Anuncio publicado correctamente"
-                        title = ""; body = ""
-                    } else message = "Error: ${error ?: "No se pudo publicar"}"
+                        message = "✓ Publicado en Lo nuevo"
+                        imageUri = null
+                        title = ""
+                        body = ""
+                    } else {
+                        message = "Error: ${error ?: "No se pudo publicar"}"
+                    }
                 }
             },
-            enabled = title.isNotBlank() && body.isNotBlank() && !loading,
-            modifier = Modifier.fillMaxWidth()
-        ) { Text(if (loading) "Publicando…" else "Publicar anuncio") }
+            enabled = imageUri != null && !loading,
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        ) {
+            if (loading) Text("Subiendo…") else Text("Publicar en Lo nuevo")
+        }
     }
 }
 
