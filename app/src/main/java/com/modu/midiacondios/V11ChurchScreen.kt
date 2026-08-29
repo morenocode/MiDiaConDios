@@ -2,6 +2,7 @@ package com.modu.midiacondios
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,7 +18,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -40,9 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -54,10 +57,7 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
 
     var personalActivities by remember { mutableStateOf(PersonalChurchStore.loadActivities(context)) }
     var personalAnnouncements by remember { mutableStateOf(PersonalChurchStore.loadAnnouncements(context)) }
-
-    var remoteEvents by remember { mutableStateOf<List<ChurchEvent>>(emptyList()) }
     var updates by remember { mutableStateOf<List<ChurchUpdate>>(emptyList()) }
-    var remoteState by remember { mutableStateOf<Boolean?>(null) }
     var updatesState by remember { mutableStateOf<Boolean?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
 
@@ -67,23 +67,12 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
     var editingAnnouncement by remember { mutableStateOf<PersonalChurchAnnouncement?>(null) }
 
     LaunchedEffect(refresh) {
-        remoteState = null
         updatesState = null
-        FirebaseCommunitySource.load(context) { events, _, success ->
-            remoteEvents = events
-            remoteState = success
-        }
         FirebaseCommunitySource.loadUpdates(context) { items, success ->
             updates = items
             updatesState = success
         }
     }
-
-    val shownRemoteEvents = if (remoteEvents.isNotEmpty()) remoteEvents else listOf(
-        ChurchEvent("Culto dominical", "Domingo · 10:00 a. m."),
-        ChurchEvent("Noche de oración", "Viernes · 7:30 p. m."),
-        ChurchEvent("Reunión de jóvenes", "Sábado · 5:00 p. m.")
-    )
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(contentPadding),
@@ -192,56 +181,25 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
             HorizontalDivider()
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.weight(1f)) {
-                    Text("Próximas actividades", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text(
-                        when (remoteState) {
-                            null -> "Actualizando…"
-                            true -> "Agenda actualizada"
-                            false -> "Contenido disponible"
-                        },
-                        color = scheme.onSurfaceVariant,
-                        fontSize = 12.sp
-                    )
-                }
+                Text("Lo nuevo", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 IconButton(onClick = { refresh++ }) {
-                    Icon(Icons.Outlined.Refresh, contentDescription = "Actualizar")
+                    Icon(Icons.Outlined.Refresh, contentDescription = "Actualizar Lo nuevo")
                 }
             }
-        }
-
-        items(shownRemoteEvents) { event ->
-            Card(colors = CardDefaults.cardColors(containerColor = scheme.surfaceVariant), modifier = Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
-                    Icon(Icons.Outlined.Event, contentDescription = null, tint = scheme.primary)
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text(event.title, fontWeight = FontWeight.SemiBold)
-                        if (event.subtitle.isNotBlank()) Text(event.subtitle, color = scheme.onSurfaceVariant, fontSize = 13.sp)
-                        if (event.date.isNotBlank()) Text(event.date, color = scheme.primary, fontSize = 12.sp)
-                    }
-                }
-            }
-        }
-
-        item {
-            Spacer(Modifier.height(8.dp))
-            Text("Lo nuevo", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text(
-                when (updatesState) {
-                    null -> "Cargando publicaciones…"
-                    true -> "Fotografías y flyers publicados por la iglesia"
-                    false -> "No se pudo actualizar en este momento"
-                },
-                color = scheme.onSurfaceVariant,
-                fontSize = 12.sp
-            )
         }
 
         if (updates.isEmpty()) {
             item {
-                Card(colors = CardDefaults.cardColors(containerColor = scheme.surfaceVariant), modifier = Modifier.fillMaxWidth()) {
-                    Text("Aún no hay publicaciones nuevas.", modifier = Modifier.padding(15.dp), color = scheme.onSurfaceVariant)
+                V13DemoChurchFlyer()
+                if (updatesState == false) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Vista demo · las publicaciones reales aparecerán aquí.",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        color = scheme.onSurfaceVariant,
+                        fontSize = 11.sp
+                    )
                 }
             }
         } else {
@@ -305,6 +263,113 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
                 showAnnouncementDialog = false
             }
         )
+    }
+}
+
+@Composable
+private fun V13DemoChurchFlyer() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(4f / 5f)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF080B12),
+                            Color(0xFF111827),
+                            Color(0xFF3A220F),
+                            Color(0xFF0B0D12)
+                        )
+                    )
+                )
+                .padding(horizontal = 22.dp, vertical = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "VISTA DEMO",
+                        color = Color(0xFFD9B477),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        "CELEBREMOS JUNTOS",
+                        color = Color(0xFFD9B477),
+                        fontSize = 12.sp,
+                        letterSpacing = 2.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "ANIVERSARIO",
+                        color = Color(0xFFF3D6A6),
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "DE NUESTRA IGLESIA",
+                        color = Color.White,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 3.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("✦", color = Color(0xFFD9B477), fontSize = 27.sp)
+                    Text(
+                        "CONCIERTO",
+                        color = Color.White,
+                        fontSize = 39.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(7.dp))
+                    Text(
+                        "ALABANZA  •  ADORACIÓN  •  UNIDAD",
+                        color = Color(0xFFE9C38A),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Una noche para celebrar la fidelidad de Dios",
+                        color = Color.White.copy(alpha = .9f),
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    Text(
+                        "SÁBADO  •  6:00 P. M.",
+                        color = Color(0xFFF3D6A6),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(5.dp))
+                    Text(
+                        "VEN CON TU FAMILIA Y AMIGOS",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
     }
 }
 
