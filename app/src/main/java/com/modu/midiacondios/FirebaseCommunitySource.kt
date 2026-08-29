@@ -15,6 +15,14 @@ data class ChurchAnnouncement(
     val body: String
 )
 
+data class ChurchUpdate(
+    val id: String,
+    val title: String,
+    val body: String,
+    val imageUrl: String,
+    val createdAt: Long = 0L
+)
+
 object FirebaseCommunitySource {
 
     fun load(
@@ -70,6 +78,38 @@ object FirebaseCommunitySource {
                 failed = true
                 announcements = emptyList()
                 finishIfReady()
+            }
+    }
+
+    fun loadUpdates(
+        context: Context,
+        onResult: (List<ChurchUpdate>, Boolean) -> Unit
+    ) {
+        if (FirebaseApp.getApps(context).isEmpty()) {
+            onResult(emptyList(), false)
+            return
+        }
+
+        FirebaseFirestore.getInstance()
+            .collection("church_updates")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val items = snapshot.documents.mapNotNull { doc ->
+                    val active = doc.getBoolean("active") ?: true
+                    val imageUrl = doc.getString("imageUrl").orEmpty().trim()
+                    if (!active || imageUrl.isBlank()) return@mapNotNull null
+                    ChurchUpdate(
+                        id = doc.id,
+                        title = doc.getString("title").orEmpty().trim(),
+                        body = doc.getString("body").orEmpty().trim(),
+                        imageUrl = imageUrl,
+                        createdAt = doc.getTimestamp("createdAt")?.toDate()?.time ?: 0L
+                    )
+                }.sortedByDescending { it.createdAt }
+                onResult(items, true)
+            }
+            .addOnFailureListener {
+                onResult(emptyList(), false)
             }
     }
 }
