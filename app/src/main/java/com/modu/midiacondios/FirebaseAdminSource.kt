@@ -1,8 +1,13 @@
 package com.modu.midiacondios
 
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
+import java.util.UUID
 
 object FirebaseAdminSource {
     private val auth: FirebaseAuth get() = FirebaseAuth.getInstance()
@@ -77,5 +82,52 @@ object FirebaseAdminSource {
         db.collection("announcements").document().set(payload)
             .addOnSuccessListener { onResult(true, null) }
             .addOnFailureListener { onResult(false, it.localizedMessage ?: "No se pudo publicar") }
+    }
+
+    fun publishChurchUpdate(
+        imageUri: Uri,
+        contentType: String?,
+        title: String,
+        body: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        val user = auth.currentUser ?: run {
+            onResult(false, "Debes iniciar sesión como administrador")
+            return
+        }
+
+        val id = UUID.randomUUID().toString()
+        val path = "church_updates/$id"
+        val storageRef = FirebaseStorage.getInstance().reference.child(path)
+        val metadata = StorageMetadata.Builder().apply {
+            if (!contentType.isNullOrBlank()) setContentType(contentType)
+            setCustomMetadata("uploadedBy", user.uid)
+        }.build()
+
+        storageRef.putFile(imageUri, metadata)
+            .continueWithTask { task ->
+                if (!task.isSuccessful) throw task.exception ?: IllegalStateException("No se pudo subir la imagen")
+                storageRef.downloadUrl
+            }
+            .addOnSuccessListener { downloadUri ->
+                val payload = mapOf(
+                    "title" to title.trim(),
+                    "body" to body.trim(),
+                    "imageUrl" to downloadUri.toString(),
+                    "storagePath" to path,
+                    "active" to true,
+                    "createdAt" to FieldValue.serverTimestamp(),
+                    "createdBy" to user.uid
+                )
+                db.collection("church_updates").document(id).set(payload)
+                    .addOnSuccessListener { onResult(true, null) }
+                    .addOnFailureListener { error ->
+                        storageRef.delete()
+                        onResult(false, error.localizedMessage ?: "La imagen subió, pero no se pudo publicar")
+                    }
+            }
+            .addOnFailureListener { error ->
+                onResult(false, error.localizedMessage ?: "No se pudo subir la imagen")
+            }
     }
 }
