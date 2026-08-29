@@ -392,7 +392,7 @@ private fun V15AnchoredSpeechBubble(visible: Boolean, message: String) {
 
     val scheme = MaterialTheme.colorScheme
     val density = LocalDensity.current
-    val gapPx = with(density) { 4.dp.roundToPx() }
+    val gapPx = with(density) { 1.dp.roundToPx() }
     val edgePx = with(density) { 8.dp.roundToPx() }
     val provider = remember(gapPx, edgePx) { V15BubblePositionProvider(gapPx, edgePx) }
 
@@ -407,29 +407,40 @@ private fun V15AnchoredSpeechBubble(visible: Boolean, message: String) {
         )
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Canvas(Modifier.width(24.dp).height(12.dp)) {
-                val path = Path().apply {
-                    moveTo(size.width / 2f, 0f)
-                    lineTo(size.width, size.height)
-                    lineTo(0f, size.height)
-                    close()
-                }
-                drawPath(path, scheme.surface)
-            }
             Surface(
-                modifier = Modifier.widthIn(min = 180.dp, max = 280.dp),
-                shape = RoundedCornerShape(22.dp),
+                modifier = Modifier.widthIn(min = 176.dp, max = 270.dp),
+                shape = RoundedCornerShape(24.dp),
                 color = scheme.surface,
-                shadowElevation = 10.dp,
-                border = BorderStroke(1.dp, scheme.outlineVariant)
+                shadowElevation = 8.dp,
+                border = BorderStroke(3.dp, scheme.onSurface)
             ) {
                 Text(
                     message,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     textAlign = TextAlign.Center,
                     fontSize = 14.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.Medium
+                    lineHeight = 19.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Canvas(Modifier.width(28.dp).height(15.dp)) {
+                val tail = Path().apply {
+                    moveTo(0f, 0f)
+                    lineTo(size.width / 2f, size.height)
+                    lineTo(size.width, 0f)
+                    close()
+                }
+                drawPath(tail, scheme.surface)
+                drawPath(
+                    tail,
+                    scheme.onSurface,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3.dp.toPx())
+                )
+                drawLine(
+                    color = scheme.surface,
+                    start = androidx.compose.ui.geometry.Offset(3.dp.toPx(), 0f),
+                    end = androidx.compose.ui.geometry.Offset(size.width - 3.dp.toPx(), 0f),
+                    strokeWidth = 4.dp.toPx()
                 )
             }
         }
@@ -450,12 +461,7 @@ private class V15BubblePositionProvider(
         val maxX = (windowSize.width - popupContentSize.width - edgePx).coerceAtLeast(edgePx)
         val x = preferredX.coerceIn(edgePx, maxX)
 
-        val belowY = anchorBounds.bottom + gapPx
-        val y = if (belowY + popupContentSize.height <= windowSize.height - edgePx) {
-            belowY
-        } else {
-            (anchorBounds.top - popupContentSize.height - gapPx).coerceAtLeast(edgePx)
-        }
+        val y = (anchorBounds.top - popupContentSize.height - gapPx).coerceAtLeast(edgePx)
         return IntOffset(x, y)
     }
 }
