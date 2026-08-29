@@ -141,7 +141,7 @@ fun MiDiaConDiosV07App() {
                 modifier = Modifier.then(Modifier)
             ) {
                 composable("inicio") {
-                    V10HomeScreen(
+                    V11HomeScreen(
                         contentPadding = padding,
                         onPrayers = { navigateTopLevel("oraciones") },
                         onGratitude = { nav.navigate("gratitud") { launchSingleTop = true } },
@@ -164,7 +164,7 @@ fun MiDiaConDiosV07App() {
                 }
                 composable("gratitud") { V7GratitudeScreen(padding) }
                 composable("favoritos") { V7FavoritesScreen(padding) }
-                composable("iglesia") { V7ChurchScreen(padding) }
+                composable("iglesia") { V11ChurchScreen(padding) }
                 composable("admin") { AdminPanelScreen(onBack = { nav.popBackStack() }) }
             }
         }
