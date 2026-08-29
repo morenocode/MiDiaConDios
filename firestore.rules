@@ -24,6 +24,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Fotografías y flyers de "Lo nuevo".
+    // Todos pueden verlos; solo el administrador puede publicar o modificarlos.
+    match /church_updates/{document} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     // Cada usuario autenticado solo puede comprobar si existe SU documento admin.
     // La app nunca puede crear, editar, borrar ni listar administradores.
     match /admins/{uid} {
