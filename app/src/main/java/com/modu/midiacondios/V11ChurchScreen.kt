@@ -1,10 +1,12 @@
 package com.modu.midiacondios
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -39,10 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 
 @Composable
 fun V11ChurchScreen(contentPadding: PaddingValues) {
@@ -53,8 +56,9 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
     var personalAnnouncements by remember { mutableStateOf(PersonalChurchStore.loadAnnouncements(context)) }
 
     var remoteEvents by remember { mutableStateOf<List<ChurchEvent>>(emptyList()) }
-    var remoteAnnouncements by remember { mutableStateOf<List<ChurchAnnouncement>>(emptyList()) }
+    var updates by remember { mutableStateOf<List<ChurchUpdate>>(emptyList()) }
     var remoteState by remember { mutableStateOf<Boolean?>(null) }
+    var updatesState by remember { mutableStateOf<Boolean?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
 
     var showActivityDialog by remember { mutableStateOf(false) }
@@ -64,10 +68,14 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
 
     LaunchedEffect(refresh) {
         remoteState = null
-        FirebaseCommunitySource.load(context) { events, announcements, success ->
+        updatesState = null
+        FirebaseCommunitySource.load(context) { events, _, success ->
             remoteEvents = events
-            remoteAnnouncements = announcements
             remoteState = success
+        }
+        FirebaseCommunitySource.loadUpdates(context) { items, success ->
+            updates = items
+            updatesState = success
         }
     }
 
@@ -185,11 +193,11 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
-                    Text("De tu iglesia", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text("Próximas actividades", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     Text(
                         when (remoteState) {
                             null -> "Actualizando…"
-                            true -> "Contenido publicado"
+                            true -> "Agenda actualizada"
                             false -> "Contenido disponible"
                         },
                         color = scheme.onSurfaceVariant,
@@ -200,10 +208,6 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
                     Icon(Icons.Outlined.Refresh, contentDescription = "Actualizar")
                 }
             }
-        }
-
-        item {
-            Text("Próximas actividades", fontSize = 17.sp, fontWeight = FontWeight.Bold)
         }
 
         items(shownRemoteEvents) { event ->
@@ -221,21 +225,49 @@ fun V11ChurchScreen(contentPadding: PaddingValues) {
         }
 
         item {
-            Spacer(Modifier.height(4.dp))
-            Text("Anuncios de la iglesia", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            Text("Lo nuevo", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(
+                when (updatesState) {
+                    null -> "Cargando publicaciones…"
+                    true -> "Fotografías y flyers publicados por la iglesia"
+                    false -> "No se pudo actualizar en este momento"
+                },
+                color = scheme.onSurfaceVariant,
+                fontSize = 12.sp
+            )
         }
 
-        if (remoteAnnouncements.isEmpty()) {
+        if (updates.isEmpty()) {
             item {
-                Text("Aún no hay anuncios publicados.", color = scheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 6.dp))
+                Card(colors = CardDefaults.cardColors(containerColor = scheme.surfaceVariant), modifier = Modifier.fillMaxWidth()) {
+                    Text("Aún no hay publicaciones nuevas.", modifier = Modifier.padding(15.dp), color = scheme.onSurfaceVariant)
+                }
             }
         } else {
-            items(remoteAnnouncements) { item ->
-                Card(colors = CardDefaults.cardColors(containerColor = scheme.surfaceVariant), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text("📣 ${item.title}", fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(3.dp))
-                        Text(item.body, color = scheme.onSurfaceVariant, fontSize = 13.sp)
+            items(updates, key = { it.id }) { item ->
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        AsyncImage(
+                            model = item.imageUrl,
+                            contentDescription = item.title.ifBlank { "Publicación de la iglesia" },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(4f / 5f)
+                                .background(scheme.surfaceVariant),
+                            contentScale = ContentScale.Fit
+                        )
+                        if (item.title.isNotBlank() || item.body.isNotBlank()) {
+                            Column(Modifier.padding(14.dp)) {
+                                if (item.title.isNotBlank()) {
+                                    Text(item.title, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                }
+                                if (item.body.isNotBlank()) {
+                                    if (item.title.isNotBlank()) Spacer(Modifier.height(4.dp))
+                                    Text(item.body, color = scheme.onSurfaceVariant, lineHeight = 20.sp)
+                                }
+                            }
+                        }
                     }
                 }
             }
