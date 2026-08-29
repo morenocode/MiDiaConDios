@@ -141,7 +141,7 @@ fun MiDiaConDiosV07App() {
                 modifier = Modifier.then(Modifier)
             ) {
                 composable("inicio") {
-                    V14HomeScreen(
+                    V15HomeScreen(
                         contentPadding = padding,
                         onPrayers = { navigateTopLevel("oraciones") },
                         onGratitude = { nav.navigate("gratitud") { launchSingleTop = true } },
